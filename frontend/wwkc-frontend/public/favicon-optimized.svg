@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- 背景圆形 -->
+  <circle cx="16" cy="16" r="16" fill="#4A90E2"/>
+  
+  <!-- 库存箱子主体 -->
+  <rect x="8" y="12" width="16" height="12" rx="1" fill="white" stroke="#357ABD" stroke-width="1.5"/>
+  
+  <!-- 箱子顶部 -->
+  <rect x="6" y="10" width="20" height="4" rx="1" fill="white" stroke="#357ABD" stroke-width="1.5"/>
+  
+  <!-- 箱子内部线条 -->
+  <line x1="12" y1="16" x2="20" y2="16" stroke="#4A90E2" stroke-width="1.5"/>
+  <line x1="12" y1="20" x2="20" y2="20" stroke="#4A90E2" stroke-width="1.5"/>
+  
+  <!-- 装饰圆点 -->
+  <circle cx="10" cy="14" r="1.5" fill="#4A90E2"/>
+  <circle cx="22" cy="14" r="1.5" fill="#4A90E2"/>
+  
+  <!-- 高光效果 -->
+  <circle cx="12" cy="12" r="2" fill="rgba(255,255,255,0.3)"/>
+</svg>
