@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
-from ..models import User, EmailVerificationCode, PasswordResetToken, Department, Store
+from django.utils import timezone
+from ..models import User, EmailVerificationCode, PasswordResetToken
+from ..models.Department import Department
+from ..models.store_management import Store
 import re
 
 
@@ -29,6 +32,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, max_length=128)
     confirm_password = serializers.CharField(write_only=True)
     email_verification_code = serializers.CharField(write_only=True, max_length=6)
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, default='staff', required=False)
+    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all(), required=False, allow_null=True)
+    store = serializers.PrimaryKeyRelatedField(queryset=Store.objects.all(), required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -57,7 +63,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 code=attrs['email_verification_code'],
                 is_used=False
             )
-            if verification.is_expired():
+            # 使用timezone-aware datetime检查过期
+            if timezone.now() > verification.expires_at:
                 raise serializers.ValidationError({'email_verification_code': '验证码已过期'})
         except EmailVerificationCode.DoesNotExist:
             raise serializers.ValidationError({'email_verification_code': '验证码错误'})
@@ -67,19 +74,38 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if role not in ['staff', 'store_operator']:
             raise serializers.ValidationError({'role': '注册时只能选择普通员工或店铺运营角色'})
 
+        # 验证部门和店铺的关联关系
+        department = attrs.get('department')
+        store = attrs.get('store')
+        
+        if store and not department:
+            # 如果指定了店铺，必须指定部门
+            attrs['department'] = store.department
+        elif store and department and store.department != department:
+            # 店铺和部门必须匹配
+            raise serializers.ValidationError({'store': '店铺必须属于指定的部门'})
+
         return attrs
 
     def create(self, validated_data):
         # 移除不需要的字段
-        validated_data.pop('confirm_password')
-        validated_data.pop('email_verification_code')
+        confirm_password = validated_data.pop('confirm_password')
+        email_verification_code = validated_data.pop('email_verification_code')
 
-        # 创建用户
+        # 确保部门和店铺字段存在
+        department = validated_data.get('department')
+        store = validated_data.get('store')
+        
+        # 如果没有指定部门，尝试从店铺获取
+        if not department and store:
+            validated_data['department'] = store.department
+
+        # 创建用户 - 只传递必要的字段
         user = User.objects.create_user(
             username=validated_data['username'],
-            phone=validated_data['phone'],
             email=validated_data['email'],
             password=validated_data['password'],
+            phone=validated_data['phone'],
             role=validated_data.get('role', 'staff'),
             department=validated_data.get('department'),
             store=validated_data.get('store')
@@ -88,7 +114,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # 标记验证码为已使用
         EmailVerificationCode.objects.filter(
             email=validated_data['email'],
-            code=validated_data['email_verification_code']
+            code=email_verification_code
         ).update(is_used=True)
 
         # 标记邮箱为已验证
@@ -288,3 +314,17 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('您没有权限修改用户店铺')
         
         return value
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """用户基本信息序列化器"""
+    department = DepartmentSerializer(read_only=True)
+    store = StoreSerializer(read_only=True)
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'email', 'phone', 'role', 'department', 'store',
+            'is_active', 'status', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']

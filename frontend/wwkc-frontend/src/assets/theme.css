@@ -1,0 +1,225 @@
+/* 主题CSS变量定义 */
+
+:root {
+  /* 间距变量 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* 默认主题颜色 */
+  --primary-color: #409EFF;
+  --primary-light: #79BBFF;
+  --primary-lighter: #A0CFFF;
+  --primary-lightest: #D9ECFF;
+  --primary-dark: #337ECC;
+  --primary-darker: #2B5AA0;
+  --primary-ultra-light: #F0F9FF;
+
+  --accent-color: #67C23A;
+  --accent-light: #85CE61;
+  --accent-lighter: #95D475;
+  --accent-lightest: #F0F9EB;
+  --accent-dark: #5DAF34;
+  --accent-darker: #4C8D2A;
+
+  --success-color: #67C23A;
+  --warning-color: #E6A23C;
+  --danger-color: #F56C6C;
+  --info-color: #909399;
+
+  /* 背景颜色 */
+  --background-color: #FFFFFF;
+  --background-color-page: #F5F7FA;
+  --background-color-overlay: #FFFFFF;
+
+  /* 文字颜色 */
+  --text-color-primary: #303133;
+  --text-color-regular: #606266;
+  --text-color-secondary: #909399;
+  --text-color-placeholder: #C0C4CC;
+  --text-color-disabled: #C0C4CC;
+
+  /* 边框颜色 */
+  --border-color: #DCDFE6;
+  --border-color-light: #E4E7ED;
+  --border-color-lighter: #EBEEF5;
+  --border-color-extra-light: #F2F6FC;
+
+  /* 字体设置 */
+  --font-size-base: 16px;
+  --font-size-small: 14px;
+  --font-size-large: 18px;
+  --font-size-extra-large: 20px;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --line-height: 1.5;
+  --letter-spacing: 0px;
+  --font-weight: normal;
+
+  /* 布局设置 */
+  --sidebar-width: 240px;
+  --header-height: 60px;
+  --content-padding: 24px;
+
+  /* 阴影 */
+  --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+  --box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --box-shadow-dark: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.12);
+
+  /* 圆角 */
+  --border-radius-base: 4px;
+  --border-radius-small: 2px;
+  --border-radius-large: 8px;
+  --border-radius-round: 20px;
+
+  /* 过渡动画 */
+  --transition-base: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  --transition-fast: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+  --transition-slow: all 0.4s cubic-bezier(0.645, 0.045, 0.355, 1);
+
+  /* Z-index层级 */
+  --z-index-normal: 1;
+  --z-index-top: 1000;
+  --z-index-fixed: 2000;
+  --z-index-modal: 3000;
+  --z-index-popup: 4000;
+  --z-index-tooltip: 5000;
+}
+
+/* 深色主题 */
+.dark-theme {
+  --background-color: #121212;
+  --background-color-page: #1E1E1E;
+  --background-color-overlay: #2D2D2D;
+
+  --text-color-primary: #FFFFFF;
+  --text-color-regular: #E0E0E0;
+  --text-color-secondary: #B0B0B0;
+  --text-color-placeholder: #808080;
+  --text-color-disabled: #606060;
+
+  --border-color: #404040;
+  --border-color-light: #505050;
+  --border-color-lighter: #606060;
+  --border-color-extra-light: #707070;
+
+  --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 6px rgba(0, 0, 0, 0.2);
+  --box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.3);
+  --box-shadow-dark: 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+/* 字体大小类 */
+.font-size-small {
+  --font-size-base: 14px;
+}
+
+.font-size-medium {
+  --font-size-base: 16px;
+}
+
+.font-size-large {
+  --font-size-base: 18px;
+}
+
+.font-size-extra-large {
+  --font-size-base: 20px;
+}
+
+/* 紧凑模式 */
+.compact-mode {
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+  
+  --content-padding: 16px;
+  --border-radius-base: 2px;
+  --border-radius-large: 4px;
+}
+
+/* 高对比度模式 */
+.high-contrast {
+  --border-color: #000000;
+  --border-color-light: #000000;
+  --border-color-lighter: #000000;
+  --border-color-extra-light: #000000;
+  
+  --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 6px rgba(0, 0, 0, 0.6);
+  --box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.8);
+  --box-shadow-dark: 0 2px 4px rgba(0, 0, 0, 1), 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+/* 减少动画模式 */
+.reduce-motion {
+  --transition-base: none;
+  --transition-fast: none;
+  --transition-slow: none;
+}
+
+/* 焦点指示器 */
+.focus-indicator:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* 键盘导航支持 */
+.keyboard-navigation .el-button:focus,
+.keyboard-navigation .el-input:focus,
+.keyboard-navigation .el-select:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* 色盲支持 */
+.colorblind-support {
+  --success-color: #2E8B57;
+  --warning-color: #FF8C00;
+  --danger-color: #DC143C;
+  --info-color: #4682B4;
+}
+
+/* 响应式断点 */
+@media (max-width: 1200px) {
+  :root {
+    --sidebar-width: 200px;
+    --content-padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+    --content-padding: 16px;
+    --spacing-xl: 24px;
+    --spacing-xxl: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --content-padding: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 20px;
+    --spacing-xxl: 24px;
+  }
+}
+
+/* 打印样式 */
+@media print {
+  :root {
+    --background-color: #FFFFFF;
+    --text-color-primary: #000000;
+    --border-color: #000000;
+    --box-shadow: none;
+  }
+  
+  .dark-theme {
+    --background-color: #FFFFFF;
+    --text-color-primary: #000000;
+    --border-color: #000000;
+  }
+}

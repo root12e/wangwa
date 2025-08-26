@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
-from .models import User, Department, Store, EmailVerificationCode, PasswordResetToken
+from .models import User, EmailVerificationCode, PasswordResetToken
+from .models.Department import Department
+from .models.store_management import Store
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):

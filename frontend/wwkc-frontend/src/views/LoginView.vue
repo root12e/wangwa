@@ -170,9 +170,32 @@
                   placeholder="选择角色"
                   size="large"
                   style="width: 100%"
+                  @change="handleRoleChange"
                 >
-                  <el-option label="普通员工" value="staff" />
+                  <el-option 
+                    label="超级管理员" 
+                    value="super_admin" 
+                    :disabled="!canRegisterSuperAdmin"
+                  />
+                  <el-option label="部门管理员" value="department_manager" />
                   <el-option label="店铺运营" value="store_operator" />
+                  <el-option label="普通员工" value="staff" />
+                </el-select>
+              </el-form-item>
+              
+              <el-form-item prop="department" v-if="registerForm.role === 'department_manager'">
+                <el-select
+                  v-model="registerForm.department"
+                  placeholder="选择部门"
+                  size="large"
+                  style="width: 100%"
+                >
+                  <el-option 
+                    v-for="dept in departments" 
+                    :key="dept.id" 
+                    :label="dept.name" 
+                    :value="dept.id"
+                  />
                 </el-select>
               </el-form-item>
               
@@ -260,16 +283,21 @@ const registerForm = reactive({
   username: '',
   phone: '',
   email: '',
-  email_verification_code: '',
   password: '',
   confirm_password: '',
-  role: 'staff'
+  email_verification_code: '',
+  role: 'staff',
+  department: ''
 })
 
 // 忘记密码表单
 const forgotPasswordForm = reactive({
   email: ''
 })
+
+// 部门列表
+const departments = ref<Array<{id: string, name: string}>>([])
+const canRegisterSuperAdmin = ref(true)
 
 // 表单验证规则
 const loginRules = {
@@ -296,12 +324,12 @@ const registerRules = {
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
   ],
   email_verification_code: [
-    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { required: true, message: '请输入邮箱验证码', trigger: 'blur' },
     { len: 6, message: '验证码为6位数字', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 8, message: '密码长度不能少于8位', trigger: 'blur' }
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
   ],
   confirm_password: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -318,6 +346,18 @@ const registerRules = {
   ],
   role: [
     { required: true, message: '请选择角色', trigger: 'change' }
+  ],
+  department: [
+    {
+      validator: (rule: any, value: string, callback: Function) => {
+        if (registerForm.role === 'department_manager' && !value) {
+          callback(new Error('部门管理员必须选择部门'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change'
+    }
   ]
 }
 
@@ -333,24 +373,17 @@ const sendVerificationCode = async () => {
   try {
     await registerFormRef.value.validateField('email')
     
-    // 这里调用后端发送验证码接口
-    const response = await fetch('/api/auth/send-verification-code/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email: registerForm.email })
-    })
+    const result = await authStore.sendVerificationCode(registerForm.email)
     
-    if (response.ok) {
+    if (result && result.success) {
       ElMessage.success('验证码已发送到您的邮箱')
       startCountdown()
     } else {
-      const error = await response.json()
-      ElMessage.error(error.message || '发送失败，请重试')
+      ElMessage.error('发送失败，请重试')
     }
   } catch (error) {
     console.error('发送验证码失败:', error)
+    ElMessage.error('发送失败，请重试')
   }
 }
 
@@ -371,22 +404,9 @@ const handleLogin = async () => {
     await loginFormRef.value.validate()
     loginLoading.value = true
     
-    // 调用后端登录接口
-    const response = await fetch('/api/auth/login/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(loginForm)
-    })
+    const result = await authStore.login(loginForm)
     
-    if (response.ok) {
-      const data = await response.json()
-      
-      // 保存用户信息和token
-      authStore.setUser(data.user)
-      authStore.setToken(data.tokens.access)
-      
+    if (result && result.success) {
       if (rememberMe.value) {
         localStorage.setItem('rememberMe', 'true')
       }
@@ -401,8 +421,7 @@ const handleLogin = async () => {
         router.push('/')
       }
     } else {
-      const error = await response.json()
-      ElMessage.error(error.message || '登录失败，请检查用户名和密码')
+      ElMessage.error('登录失败，请检查用户名和密码')
     }
   } catch (error) {
     console.error('登录失败:', error)
@@ -418,31 +437,75 @@ const handleRegister = async () => {
     await registerFormRef.value.validate()
     registerLoading.value = true
     
-    // 调用后端注册接口
-    const response = await fetch('/api/auth/register/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(registerForm)
-    })
+    const result = await authStore.register(registerForm)
     
-    if (response.ok) {
-      const data = await response.json()
-      ElMessage.success(data.message || '注册成功！请登录')
+    if (result && result.success) {
+      ElMessage.success('注册成功！请登录')
       showRegister.value = false
       // 清空注册表单
-      Object.keys(registerForm).forEach(key => {
-        registerForm[key] = ''
+      Object.keys(registerForm).forEach((key: string) => {
+        if (key in registerForm) {
+          (registerForm as any)[key] = key === 'role' ? 'staff' : ''
+        }
       })
-      registerForm.role = 'staff'
+      // 重置倒计时
+      codeCountdown.value = 0
     } else {
-      const error = await response.json()
-      ElMessage.error(error.message || '注册失败，请重试')
+      // 显示具体的错误信息
+      if (result && result.error && result.details) {
+        // 如果有字段级别的错误，显示具体字段错误
+        const errorMessages = []
+        for (const [field, message] of Object.entries(result.details)) {
+          const fieldNames: Record<string, string> = {
+            'username': '用户名',
+            'phone': '手机号',
+            'email': '邮箱',
+            'email_verification_code': '验证码',
+            'password': '密码',
+            'confirm_password': '确认密码',
+            'role': '角色',
+            'department': '部门'
+          }
+          const fieldName = fieldNames[field] || field
+          errorMessages.push(`${fieldName}: ${message}`)
+        }
+        ElMessage.error(errorMessages.join('\n'))
+      } else if (result && result.message) {
+        ElMessage.error(result.message)
+      } else {
+        ElMessage.error('注册失败，请重试')
+      }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('注册失败:', error)
-    ElMessage.error('注册失败，请重试')
+    // 显示具体的错误信息
+    if (error.response?.data) {
+      const errorData = error.response.data
+      if (errorData.details) {
+        const errorMessages = []
+        for (const [field, message] of Object.entries(errorData.details)) {
+          const fieldNames: Record<string, string> = {
+            'username': '用户名',
+            'phone': '手机号',
+            'email': '邮箱',
+            'email_verification_code': '验证码',
+            'password': '密码',
+            'confirm_password': '确认密码',
+            'role': '角色',
+            'department': '部门'
+          }
+          const fieldName = fieldNames[field] || field
+          errorMessages.push(`${fieldName}: ${message}`)
+        }
+        ElMessage.error(errorMessages.join('\n'))
+      } else if (errorData.message) {
+        ElMessage.error(errorData.message)
+      } else {
+        ElMessage.error('注册失败，请重试')
+      }
+    } else {
+      ElMessage.error('注册失败，请重试')
+    }
   } finally {
     registerLoading.value = false
   }
@@ -453,25 +516,47 @@ const handleForgotPassword = async () => {
   try {
     await forgotPasswordFormRef.value.validate()
     
-    // 这里调用后端忘记密码接口
-    const response = await fetch('/api/auth/forgot-password/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(forgotPasswordForm)
-    })
+    const result = await authStore.forgotPassword(forgotPasswordForm.email)
     
-    if (response.ok) {
+    if (result && result.success) {
       ElMessage.success('重置密码邮件已发送到您的邮箱')
       showForgotPassword.value = false
       forgotPasswordForm.email = ''
     } else {
-      const error = await response.json()
-      ElMessage.error(error.message || '发送失败，请重试')
+      ElMessage.error('发送失败，请重试')
     }
   } catch (error) {
     console.error('忘记密码处理失败:', error)
+    ElMessage.error('发送失败，请重试')
+  }
+}
+
+// 处理角色变化
+const handleRoleChange = () => {
+  if (registerForm.role !== 'department_manager') {
+    registerForm.department = ''
+  }
+}
+
+// 检查超级管理员是否存在
+const checkSuperAdminExists = async () => {
+  try {
+    // 这里需要调用API检查超级管理员是否存在
+    // 暂时设置为true，后续可以通过API调用
+    canRegisterSuperAdmin.value = true
+  } catch (error) {
+    console.error('检查超级管理员失败:', error)
+  }
+}
+
+// 加载部门列表
+const loadDepartments = async () => {
+  try {
+    // 这里需要调用API获取部门列表
+    // 暂时设置为空数组，后续可以通过API调用
+    departments.value = []
+  } catch (error) {
+    console.error('加载部门失败:', error)
   }
 }
 
@@ -487,6 +572,11 @@ onMounted(() => {
   if (remembered === 'true') {
     rememberMe.value = true
   }
+
+  // 加载部门列表
+  loadDepartments()
+  // 检查超级管理员是否存在
+  checkSuperAdminExists()
 })
 </script>
 

@@ -1,459 +1,658 @@
 <template>
-  <div class="stores-view">
+  <div class="stores-container">
     <!-- 页面标题 -->
-    <div class="page-header fade-in-up">
+    <div class="page-header">
       <h1>店铺管理</h1>
-      <p class="page-description">管理店铺信息、业绩和运营数据</p>
+      <div class="header-actions">
+        <el-button type="primary" @click="showCreateStoreDialog" v-if="canCreateStore">
+          <el-icon>
+            <Plus />
+          </el-icon>
+          新增店铺
+        </el-button>
+      </div>
     </div>
 
     <!-- 统计卡片 -->
-    <div class="stats-grid">
-      <div class="stat-card card fade-in-up" style="animation-delay: 0.1s">
-        <div class="stat-icon">
-          <el-icon><Shop /></el-icon>
-        </div>
+    <div class="stats-cards">
+      <el-card class="stat-card">
         <div class="stat-content">
-          <div class="stat-number">24</div>
+          <div class="stat-number">{{ storeStats?.totalStores || 0 }}</div>
           <div class="stat-label">总店铺数</div>
         </div>
-      </div>
-
-      <div class="stat-card card fade-in-up" style="animation-delay: 0.2s">
-        <div class="stat-icon">
-          <el-icon><TrendCharts /></el-icon>
-        </div>
+      </el-card>
+      <el-card class="stat-card">
         <div class="stat-content">
-          <div class="stat-number">¥89,456</div>
-          <div class="stat-label">今日销售额</div>
+          <div class="stat-number">{{ storeStats?.activeStores || 0 }}</div>
+          <div class="stat-label">营业中</div>
         </div>
-      </div>
-
-      <div class="stat-card card fade-in-up" style="animation-delay: 0.3s">
-        <div class="stat-icon">
-          <el-icon><User /></el-icon>
-        </div>
+      </el-card>
+      <el-card class="stat-card">
         <div class="stat-content">
-          <div class="stat-number">156</div>
-          <div class="stat-label">店铺员工</div>
+          <div class="stat-number">{{ storeStats?.totalProducts || 0 }}</div>
+          <div class="stat-label">总产品数</div>
         </div>
-      </div>
-
-      <div class="stat-card card fade-in-up" style="animation-delay: 0.4s">
-        <div class="stat-icon">
-          <el-icon><Location /></el-icon>
-        </div>
+      </el-card>
+      <el-card class="stat-card">
         <div class="stat-content">
-          <div class="stat-number">8</div>
-          <div class="stat-label">覆盖城市</div>
+          <div class="stat-number">{{ storeStats?.totalValue || 0 }}</div>
+          <div class="stat-label">总库存价值</div>
         </div>
-      </div>
-    </div>
-
-    <!-- 操作栏 -->
-    <div class="action-bar card fade-in-up" style="animation-delay: 0.5s">
-      <div class="action-left">
-        <el-input
-          v-model="searchQuery"
-          placeholder="搜索店铺..."
-          class="search-input"
-          clearable
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
-        
-        <el-select v-model="cityFilter" placeholder="选择城市" clearable>
-          <el-option label="北京" value="beijing" />
-          <el-option label="上海" value="shanghai" />
-          <el-option label="广州" value="guangzhou" />
-          <el-option label="深圳" value="shenzhen" />
-        </el-select>
-        
-        <el-select v-model="statusFilter" placeholder="选择状态" clearable>
-          <el-option label="营业中" value="open" />
-          <el-option label="装修中" value="renovating" />
-          <el-option label="暂停营业" value="closed" />
-        </el-select>
-      </div>
-      
-      <div class="action-right">
-        <el-button type="primary" class="btn-primary">
-          <el-icon><Plus /></el-icon>
-          添加店铺
-        </el-button>
-        <el-button class="btn-secondary">
-          <el-icon><DataAnalysis /></el-icon>
-          业绩分析
-        </el-button>
-      </div>
+      </el-card>
     </div>
 
     <!-- 店铺列表 -->
-    <div class="stores-table card fade-in-up" style="animation-delay: 0.6s">
-      <el-table :data="storesData" style="width: 100%" stripe>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="name" label="店铺名称" min-width="200">
-          <template #default="scope">
-            <div class="store-info">
-              <el-avatar :size="40" :src="scope.row.logo" />
-              <div class="store-details">
-                <div class="store-name">{{ scope.row.name }}</div>
-                <div class="store-code">{{ scope.row.code }}</div>
-              </div>
-            </div>
+    <el-card class="stores-list">
+      <template #header>
+        <div class="card-header">
+          <span>店铺列表</span>
+          <div class="header-actions">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索店铺名称或编码"
+              style="width: 300px; margin-right: 16px;"
+              clearable
+              @input="handleSearch"
+            >
+              <template #prefix>
+                <el-icon>
+                  <Search />
+                </el-icon>
+              </template>
+            </el-input>
+            <el-select v-model="statusFilter" placeholder="状态筛选" clearable @change="handleSearch">
+              <el-option label="全部状态" value="" />
+              <el-option label="营业中" value="active" />
+              <el-option label="暂停营业" value="inactive" />
+              <el-option label="已关闭" value="closed" />
+              <el-option label="维护中" value="maintenance" />
+            </el-select>
+          </div>
+        </div>
+      </template>
+
+      <el-table :data="filteredStores" v-loading="loading" stripe>
+        <el-table-column prop="name" label="店铺名称" min-width="150" />
+        <el-table-column prop="code" label="店铺编码" width="120" />
+        <el-table-column prop="address" label="地址" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="phone" label="电话" width="120" />
+        <el-table-column prop="manager" label="经理" width="100">
+          <template #default="{ row }">
+            {{ row.manager?.username || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="city" label="城市" width="100" />
-        <el-table-column prop="address" label="地址" min-width="200" />
-        <el-table-column prop="phone" label="联系电话" width="130" />
-        <el-table-column prop="manager" label="店长" width="100" />
+        <el-table-column prop="department" label="所属部门" width="120">
+          <template #default="{ row }">
+            {{ row.department?.name || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
-          <template #default="scope">
-            <el-tag :type="getStatusTagType(scope.row.status)">
-              {{ getStatusDisplayName(scope.row.status) }}
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)">
+              {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="sales" label="今日销售额" width="120">
-          <template #default="scope">
-            ¥{{ scope.row.sales.toLocaleString() }}
+        <el-table-column prop="created_at" label="创建时间" width="160">
+          <template #default="{ row }">
+            {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column prop="employees" label="员工数" width="100" />
-        <el-table-column label="操作" width="250" fixed="right">
-          <template #default="scope">
-            <el-button size="small" type="primary" text>
-              <el-icon><Edit /></el-icon>
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="viewStore(row)">查看</el-button>
+            <el-button size="small" type="primary" @click="manageProducts(row)">
+              产品管理
+            </el-button>
+            <el-button 
+              size="small" 
+              type="warning" 
+              @click="editStore(row)"
+              v-if="canEditStore(row)"
+            >
               编辑
             </el-button>
-            <el-button size="small" type="success" text>
-              <el-icon><View /></el-icon>
-              查看
-            </el-button>
-            <el-button size="small" type="warning" text>
-              <el-icon><DataAnalysis /></el-icon>
-              分析
-            </el-button>
-            <el-button size="small" type="danger" text>
-              <el-icon><Delete /></el-icon>
+            <el-button 
+              size="small" 
+              type="danger" 
+              @click="handleDeleteStore(row)"
+              v-if="canDeleteStore(row)"
+            >
               删除
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      
+
       <!-- 分页 -->
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :page-sizes="[10, 20, 50, 100]"
-          :total="total"
+          :total="totalStores"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
         />
       </div>
-    </div>
+    </el-card>
 
-    <!-- 地图视图 -->
-    <div class="map-section card fade-in-up" style="animation-delay: 0.7s">
-      <div class="section-header">
-        <h3>店铺分布地图</h3>
-        <el-button type="text" class="refresh-btn">
-          <el-icon><Refresh /></el-icon>
-          刷新
-        </el-button>
-      </div>
-      <div class="map-placeholder">
-        <el-icon class="map-icon"><Location /></el-icon>
-        <p>地图组件将在这里显示店铺分布</p>
-        <p class="map-hint">支持缩放、拖拽和点击查看店铺详情</p>
-      </div>
-    </div>
+    <!-- 新增/编辑店铺对话框 -->
+    <el-dialog
+      v-model="storeDialogVisible"
+      :title="isEdit ? '编辑店铺' : '新增店铺'"
+      width="600px"
+    >
+      <el-form
+        ref="storeFormRef"
+        :model="storeForm"
+        :rules="storeRules"
+        label-width="100px"
+      >
+        <el-form-item label="店铺名称" prop="name">
+          <el-input v-model="storeForm.name" placeholder="请输入店铺名称" />
+        </el-form-item>
+        <el-form-item label="店铺编码" prop="code">
+          <el-input v-model="storeForm.code" placeholder="请输入店铺编码" />
+        </el-form-item>
+        <el-form-item label="店铺地址" prop="address">
+          <el-input v-model="storeForm.address" type="textarea" placeholder="请输入店铺地址" />
+        </el-form-item>
+        <el-form-item label="店铺电话" prop="phone">
+          <el-input v-model="storeForm.phone" placeholder="请输入店铺电话" />
+        </el-form-item>
+        <el-form-item label="店铺邮箱" prop="email">
+          <el-input v-model="storeForm.email" placeholder="请输入店铺邮箱" />
+        </el-form-item>
+        <el-form-item label="所属部门" prop="department">
+          <el-select v-model="storeForm.department" placeholder="请选择部门" style="width: 100%">
+            <el-option
+              v-for="dept in departments"
+              :key="dept.id"
+              :label="dept.name"
+              :value="dept.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="店铺状态" prop="status">
+          <el-select v-model="storeForm.status" placeholder="请选择状态" style="width: 100%">
+            <el-option label="营业中" value="active" />
+            <el-option label="暂停营业" value="inactive" />
+            <el-option label="已关闭" value="closed" />
+            <el-option label="维护中" value="maintenance" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="营业时间" prop="business_hours">
+          <el-input v-model="storeForm.business_hours" placeholder="请输入营业时间" />
+        </el-form-item>
+        <el-form-item label="店铺描述" prop="description">
+          <el-input v-model="storeForm.description" type="textarea" placeholder="请输入店铺描述" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="storeDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitStore" :loading="submitting">
+            {{ isEdit ? '更新' : '创建' }}
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 产品管理对话框 -->
+    <el-dialog
+      v-model="productDialogVisible"
+      title="产品管理"
+      width="90%"
+      top="5vh"
+    >
+      <StoreProducts :store="selectedStore" @close="productDialogVisible = false" />
+    </el-dialog>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue'
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Search } from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth'
+import { useDepartmentStore } from '@/stores/department'
+import StoreProducts from '@/components/StoreProducts.vue'
+import { getStores, createStore, updateStore, deleteStore } from '@/api/store'
+
+// 状态管理
+const authStore = useAuthStore()
+const departmentStore = useDepartmentStore()
 
 // 响应式数据
-const searchQuery = ref('')
-const cityFilter = ref('')
-const statusFilter = ref('')
+const loading = ref(false)
+const stores = ref([])
+const departments = ref([])
 const currentPage = ref(1)
 const pageSize = ref(20)
-const total = ref(24)
+const totalStores = ref(0)
+const searchKeyword = ref('')
+const statusFilter = ref('')
 
-// 模拟店铺数据
-const storesData = ref([
-  {
-    id: 1,
-    name: '北京朝阳店',
-    code: 'BJ-CY-001',
-    city: '北京',
-    address: '北京市朝阳区建国门外大街1号',
-    phone: '010-12345678',
-    manager: '张经理',
-    status: 'open',
-    sales: 12500,
-    employees: 12,
-    logo: 'https://via.placeholder.com/40x40/4A90E2/FFFFFF?text=BJ'
-  },
-  {
-    id: 2,
-    name: '上海浦东店',
-    code: 'SH-PD-001',
-    city: '上海',
-    address: '上海市浦东新区陆家嘴环路1000号',
-    phone: '021-87654321',
-    manager: '李经理',
-    status: 'open',
-    sales: 18900,
-    employees: 15,
-    logo: 'https://via.placeholder.com/40x40/7BB3F0/FFFFFF?text=SH'
-  },
-  {
-    id: 3,
-    name: '广州天河店',
-    code: 'GZ-TH-001',
-    city: '广州',
-    address: '广州市天河区天河路385号',
-    phone: '020-11223344',
-    manager: '王经理',
-    status: 'renovating',
-    sales: 0,
-    employees: 8,
-    logo: 'https://via.placeholder.com/40x40/52C41A/FFFFFF?text=GZ'
-  },
-  {
-    id: 4,
-    name: '深圳南山店',
-    code: 'SZ-NS-001',
-    city: '深圳',
-    address: '深圳市南山区深南大道9966号',
-    phone: '0755-55667788',
-    manager: '陈经理',
-    status: 'open',
-    sales: 15600,
-    employees: 10,
-    logo: 'https://via.placeholder.com/40x40/FAAD14/FFFFFF?text=SZ'
-  }
-])
+// 对话框状态
+const storeDialogVisible = ref(false)
+const productDialogVisible = ref(false)
+const isEdit = ref(false)
+const selectedStore = ref(null)
+const submitting = ref(false)
+
+// 表单数据
+const storeFormRef = ref()
+const storeForm = reactive({
+  name: '',
+  code: '',
+  address: '',
+  phone: '',
+  email: '',
+  department: '',
+  status: 'active',
+  business_hours: '',
+  description: ''
+})
+
+// 表单验证规则
+const storeRules = {
+  name: [{ required: true, message: '请输入店铺名称', trigger: 'blur' }],
+  code: [{ required: true, message: '请输入店铺编码', trigger: 'blur' }],
+  address: [{ required: true, message: '请输入店铺地址', trigger: 'blur' }],
+  phone: [{ required: true, message: '请输入店铺电话', trigger: 'blur' }],
+  department: [{ required: true, message: '请选择所属部门', trigger: 'change' }],
+  status: [{ required: true, message: '请选择店铺状态', trigger: 'change' }]
+}
+
+// 统计信息
+const storeStats = reactive({
+  totalStores: 0,
+  activeStores: 0,
+  totalProducts: 0,
+  totalValue: 0
+})
+
+// 确保 storeStats 始终可用的计算属性
+const safeStoreStats = computed(() => ({
+  totalStores: storeStats?.totalStores || 0,
+  activeStores: storeStats?.activeStores || 0,
+  totalProducts: storeStats?.totalProducts || 0,
+  totalValue: storeStats?.totalValue || 0
+}))
 
 // 计算属性
-const getStatusTagType = (status: string) => {
-  const typeMap: Record<string, string> = {
-    'open': 'success',
-    'renovating': 'warning',
-    'closed': 'danger'
+const filteredStores = computed(() => {
+  // 确保stores.value是数组
+  if (!Array.isArray(stores.value)) {
+    return []
   }
-  return typeMap[status] || 'info'
-}
+  
+  let result = stores.value
 
-const getStatusDisplayName = (status: string) => {
-  const nameMap: Record<string, string> = {
-    'open': '营业中',
-    'renovating': '装修中',
-    'closed': '暂停营业'
+  if (searchKeyword.value) {
+    const keyword = searchKeyword.value.toLowerCase()
+    result = result.filter(store => 
+      store.name?.toLowerCase().includes(keyword) ||
+      store.code?.toLowerCase().includes(keyword)
+    )
   }
-  return nameMap[status] || status
+
+  if (statusFilter.value) {
+    result = result.filter(store => store.status === statusFilter.value)
+  }
+
+  return result
+})
+
+// 权限检查
+const canCreateStore = computed(() => {
+  return authStore.user?.role === 'super_admin' || authStore.user?.role === 'department_manager'
+})
+
+const canEditStore = (store) => {
+  if (!store || !authStore.user) return false
+  
+  if (authStore.user.role === 'super_admin') return true
+  if (authStore.user.role === 'department_manager' && store.department?.id === authStore.user.department?.id) return true
+  return false
 }
 
-// 事件处理
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
-  // 这里可以重新加载数据
+const canDeleteStore = (store) => {
+  if (!store || !authStore.user) return false
+  
+  if (authStore.user.role === 'super_admin') return true
+  if (authStore.user.role === 'department_manager' && store.department?.id === authStore.user.department?.id) return true
+  return false
 }
 
-const handleCurrentChange = (val: number) => {
-  currentPage.value = val
-  // 这里可以重新加载数据
+// 方法
+const loadStores = async () => {
+  try {
+    loading.value = true
+    const response = await getStores({
+      page: currentPage.value,
+      page_size: pageSize.value
+    })
+    
+    // 确保正确提取数据
+    if (response && response.data) {
+      stores.value = response.data.results || response.data
+      totalStores.value = response.data.count || (Array.isArray(response.data) ? response.data.length : 0)
+    } else {
+      stores.value = []
+      totalStores.value = 0
+    }
+    
+    // 更新统计信息
+    updateStats()
+  } catch (error) {
+    ElMessage.error('加载店铺列表失败')
+    console.error('加载店铺列表失败:', error)
+    stores.value = []
+    totalStores.value = 0
+  } finally {
+    loading.value = false
+  }
 }
+
+const loadDepartments = async () => {
+  try {
+    await departmentStore.fetchDepartments()
+    // 确保departments是数组
+    if (Array.isArray(departmentStore.departments)) {
+      departments.value = departmentStore.departments
+    } else {
+      departments.value = []
+    }
+  } catch (error) {
+    console.error('加载部门列表失败:', error)
+    departments.value = []
+  }
+}
+
+const updateStats = () => {
+  // 确保stores.value是数组
+  if (Array.isArray(stores.value)) {
+    storeStats.totalStores = stores.value.length
+    storeStats.activeStores = stores.value.filter(store => store.status === 'active').length
+  } else {
+    storeStats.totalStores = 0
+    storeStats.activeStores = 0
+  }
+  // 这里可以添加产品数量和库存价值的统计
+}
+
+const handleSearch = () => {
+  currentPage.value = 1
+  loadStores()
+}
+
+const handleSizeChange = (val) => {
+  if (typeof val === 'number' && val > 0) {
+    pageSize.value = val
+    currentPage.value = 1
+    loadStores()
+  }
+}
+
+const handleCurrentChange = (val) => {
+  if (typeof val === 'number' && val > 0) {
+    currentPage.value = val
+    loadStores()
+  }
+}
+
+const showCreateStoreDialog = () => {
+  isEdit.value = false
+  resetStoreForm()
+  storeDialogVisible.value = true
+}
+
+const editStore = (store) => {
+  isEdit.value = true
+  selectedStore.value = store
+  
+  // 重置表单并填充数据
+  resetStoreForm()
+  Object.assign(storeForm, {
+    name: store.name,
+    code: store.code,
+    address: store.address,
+    phone: store.phone,
+    email: store.email,
+    department: store.department?.id || '',
+    status: store.status,
+    business_hours: store.business_hours,
+    description: store.description
+  })
+  
+  storeDialogVisible.value = true
+}
+
+const resetStoreForm = () => {
+  // 重置表单数据
+  Object.assign(storeForm, {
+    name: '',
+    code: '',
+    address: '',
+    phone: '',
+    email: '',
+    department: '',
+    status: 'active',
+    business_hours: '',
+    description: ''
+  })
+  
+  // 重置表单验证状态
+  if (storeFormRef.value) {
+    storeFormRef.value.resetFields()
+  }
+}
+
+const submitStore = async () => {
+  try {
+    await storeFormRef.value.validate()
+    submitting.value = true
+
+    // 准备提交数据
+    const submitData = {
+      name: storeForm.name,
+      code: storeForm.code,
+      address: storeForm.address,
+      phone: storeForm.phone,
+      email: storeForm.email,
+      department_id: storeForm.department,
+      status: storeForm.status,
+      business_hours: storeForm.business_hours,
+      description: storeForm.description
+    }
+
+    if (isEdit.value) {
+      await updateStore(selectedStore.value.id, submitData)
+      ElMessage.success('店铺更新成功')
+    } else {
+      await createStore(submitData)
+      ElMessage.success('店铺创建成功')
+    }
+
+    storeDialogVisible.value = false
+    loadStores()
+  } catch (error) {
+    ElMessage.error(isEdit.value ? '店铺更新失败' : '店铺创建失败')
+    console.error('提交店铺信息失败:', error)
+  } finally {
+    submitting.value = false
+  }
+}
+
+const handleDeleteStore = async (store) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除店铺 "${store.name}" 吗？此操作不可恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    await deleteStore(store.id)
+    ElMessage.success('店铺删除成功')
+    loadStores()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('店铺删除失败')
+      console.error('删除店铺失败:', error)
+    }
+  }
+}
+
+const viewStore = (store) => {
+  if (store && store.id) {
+    selectedStore.value = store
+    // 这里可以显示店铺详情
+  }
+}
+
+const manageProducts = (store) => {
+  if (store && store.id) {
+    selectedStore.value = store
+    productDialogVisible.value = true
+  }
+}
+
+const getStatusType = (status) => {
+  if (!status) return 'info'
+  
+  const statusMap = {
+    active: 'success',
+    inactive: 'warning',
+    closed: 'danger',
+    maintenance: 'info'
+  }
+  return statusMap[status] || 'info'
+}
+
+const getStatusText = (status) => {
+  if (!status) return '未知'
+  
+  const statusMap = {
+    active: '营业中',
+    inactive: '暂停营业',
+    closed: '已关闭',
+    maintenance: '维护中'
+  }
+  return statusMap[status] || '未知'
+}
+
+const formatDate = (date) => {
+  if (!date) return '-'
+  try {
+    return new Date(date).toLocaleString('zh-CN')
+  } catch (error) {
+    return '-'
+  }
+}
+
+// 生命周期
+onMounted(async () => {
+  try {
+    await Promise.all([
+      loadStores(),
+      loadDepartments()
+    ])
+  } catch (error) {
+    console.error('初始化数据失败:', error)
+  }
+})
 </script>
 
 <style scoped>
-.stores-view {
-  max-width: 100%;
+.stores-container {
+  padding: 24px;
 }
 
 .page-header {
-  margin-bottom: var(--spacing-xl);
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
 }
 
-.page-description {
-  color: var(--text-secondary);
-  font-size: 16px;
-  margin-top: var(--spacing-sm);
+.page-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
 }
 
-.stats-grid {
+.stats-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-xl);
-}
-
-.stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 24px;
+  text-align: center;
 }
 
 .stat-content {
-  flex: 1;
+  padding: 16px;
 }
 
 .stat-number {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1;
+  font-size: 28px;
+  font-weight: 600;
+  color: #409eff;
+  margin-bottom: 8px;
 }
 
 .stat-label {
-  color: var(--text-secondary);
   font-size: 14px;
-  margin-top: var(--spacing-xs);
+  color: #606266;
 }
 
-.action-bar {
+.stores-list {
+  margin-bottom: 24px;
+}
+
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-lg);
 }
 
-.action-left {
-  display: flex;
-  gap: var(--spacing-md);
-  align-items: center;
-}
-
-.search-input {
-  width: 300px;
-}
-
-.action-right {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.stores-table {
-  padding: 0;
-  overflow: hidden;
-  margin-bottom: var(--spacing-xl);
-}
-
-.store-info {
+.header-actions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-}
-
-.store-details {
-  display: flex;
-  flex-direction: column;
-}
-
-.store-name {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.store-code {
-  font-size: 12px;
-  color: var(--text-secondary);
+  gap: 16px;
 }
 
 .pagination-wrapper {
-  padding: var(--spacing-lg);
   display: flex;
   justify-content: center;
-  border-top: 1px solid var(--border-color);
+  margin-top: 24px;
 }
 
-.map-section {
-  padding: var(--spacing-lg);
-}
-
-.section-header {
+.dialog-footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-lg);
+  justify-content: flex-end;
+  gap: 12px;
 }
 
-.refresh-btn {
-  color: var(--primary-color);
+:deep(.el-table) {
+  margin-top: 16px;
 }
 
-.map-placeholder {
-  height: 400px;
-  background: linear-gradient(135deg, var(--primary-ultra-light) 0%, var(--background-color) 100%);
-  border: 2px dashed var(--primary-light);
-  border-radius: var(--border-radius-large);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
+:deep(.el-card__header) {
+  padding: 16px 20px;
 }
 
-.map-icon {
-  font-size: 4rem;
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-md);
-}
-
-.map-hint {
-  font-size: 14px;
-  margin-top: var(--spacing-sm);
-  opacity: 0.7;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .action-bar {
-    flex-direction: column;
-    gap: var(--spacing-md);
-    align-items: stretch;
-  }
-  
-  .action-left {
-    flex-direction: column;
-  }
-  
-  .search-input {
-    width: 100%;
-  }
-  
-  .action-right {
-    justify-content: center;
-  }
-  
-  .map-placeholder {
-    height: 300px;
-  }
+:deep(.el-card__body) {
+  padding: 20px;
 }
 </style>

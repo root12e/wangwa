@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onErrorCaptured } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { 
   House, 
   Box, 
@@ -11,7 +11,8 @@ import {
   Bell, 
   ArrowDown, 
   Fold, 
-  Expand 
+  Expand,
+  OfficeBuilding
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import LoadingPage from '@/components/LoadingPage.vue'
@@ -25,6 +26,26 @@ const authStore = useAuthStore()
 const sidebarCollapsed = ref(false)
 const showLoading = ref(true)
 
+// 全局错误处理
+onErrorCaptured((error, instance, info) => {
+  console.error('全局错误捕获:', error)
+  console.error('错误信息:', info)
+  
+  // 如果是DOM引用错误，尝试重新渲染
+  if (error.message?.includes('parentNode') || error.message?.includes('Cannot read properties of null')) {
+    console.warn('检测到DOM引用错误，尝试恢复...')
+    // 延迟重新渲染，避免无限循环
+    setTimeout(() => {
+      window.location.reload()
+    }, 1000)
+    return false // 阻止错误继续传播
+  }
+  
+  // 其他错误显示用户友好的消息
+  ElMessage.error('页面出现错误，请刷新重试')
+  return false
+})
+
 // 切换侧边栏
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
@@ -36,6 +57,8 @@ const getPageTitle = () => {
     'inventory': '库存管理',
     'users': '用户管理',
     'stores': '店铺管理',
+    'departments': '部门管理',
+    'messages': '消息和聊天室',
     'settings': '系统设置'
   }
   return titleMap[route.name as string] || '页面'
@@ -166,6 +189,16 @@ onMounted(() => {
             <span v-if="!sidebarCollapsed">店铺管理</span>
           </router-link>
           
+          <router-link to="/departments" class="nav-item" active-class="active">
+            <el-icon><OfficeBuilding /></el-icon>
+            <span v-if="!sidebarCollapsed">部门管理</span>
+          </router-link>
+          
+          <router-link to="/messages" class="nav-item" active-class="active">
+            <el-icon><Bell /></el-icon>
+            <span v-if="!sidebarCollapsed">消息和聊天室</span>
+          </router-link>
+          
           <router-link to="/settings" class="nav-item" active-class="active">
             <el-icon><Setting /></el-icon>
             <span v-if="!sidebarCollapsed">系统设置</span>
@@ -187,11 +220,11 @@ onMounted(() => {
           </div>
           
           <div class="header-right">
-            <!-- 通知 -->
+            <!-- 消息和聊天室 -->
             <el-badge :value="3" class="notification-badge">
-              <el-button type="text" class="header-btn">
+              <router-link to="/messages" class="header-btn notification-link">
                 <el-icon><Bell /></el-icon>
-              </el-button>
+              </router-link>
             </el-badge>
             
             <!-- 用户信息 -->
@@ -215,7 +248,7 @@ onMounted(() => {
                     设置
                   </el-dropdown-item>
                   <el-dropdown-item divided command="logout">
-                    <el-icon><SwitchButton /></el-icon>
+                    <el-icon><Switch /></el-icon>
                     退出登录
                   </el-dropdown-item>
                 </el-dropdown-menu>
@@ -365,6 +398,20 @@ onMounted(() => {
 .header-btn {
   color: var(--text-secondary);
   font-size: 18px;
+}
+
+.notification-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.notification-link:hover {
+  color: var(--primary-color);
+  transform: scale(1.1);
 }
 
 .user-info {

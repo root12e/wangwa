@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'django_celery_beat',
+    'django_celery_results',
     'mk.apps.MkConfig'
 ]
 
@@ -200,6 +202,9 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '3131803655@qq.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'igzsgaeovcibddac')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '3131803655@qq.com')
 
+# 前端URL配置
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
 # CORS 配置
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True').lower() == 'true'
 CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True').lower() == 'true'
@@ -247,3 +252,30 @@ LOGGING = {
         },
     },
 }
+
+# Celery 配置
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+
+# Celery Beat 配置
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Celery 任务配置
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = False
+
+# Celery 工作进程配置
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+
+# Celery 结果配置
+CELERY_RESULT_EXPIRES = 3600  # 1小时
+CELERY_RESULT_PERSISTENT = True
+
+# Celery 监控配置
+CELERY_WORKER_SEND_TASK_EVENTS = True
+CELERY_TASK_SEND_SENT_EVENT = True

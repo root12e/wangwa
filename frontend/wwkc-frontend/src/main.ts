@@ -1,4 +1,5 @@
 import './assets/main.css'
+import './assets/theme.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -8,6 +9,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
+import { useAuthStore } from './stores/auth'
 
 const app = createApp(App)
 
@@ -20,9 +22,14 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 }
 
 // 注册Pinia
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 
 // 注册路由
 app.use(router)
+
+// 初始化认证状态
+const authStore = useAuthStore(pinia)
+authStore.initAuth()
 
 app.mount('#app')
