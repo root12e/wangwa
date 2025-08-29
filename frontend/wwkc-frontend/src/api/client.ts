@@ -23,6 +23,9 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('access_token')
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
+      console.log('🔑 设置认证头:', `Bearer ${token.substring(0, 20)}...`)
+    } else {
+      console.log('⚠️ 未找到认证token')
     }
     return config
   },

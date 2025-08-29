@@ -65,6 +65,73 @@ const router = createRouter({
       component: () => import('../views/SettingsView.vue'),
       meta: { requiresAuth: true }
     },
+    // Etsy 子路由 - 直接指向对应组件
+    {
+      path: '/etsy/product-registration',
+      name: 'etsy-product-registration',
+      component: () => import('../components/etsy/EtsyProductRegistration.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/design-requirement',
+      name: 'etsy-design-requirement',
+      component: () => import('../components/etsy/EtsyDesignRequirement.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/order-import-summary',
+      name: 'etsy-order-import-summary',
+      component: () => import('../components/etsy/EtsyOrderImportSummary.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/order-statistics',
+      name: 'etsy-order-statistics',
+      component: () => import('../components/etsy/EtsyOrderStatistics.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/purchase-requirement',
+      name: 'etsy-purchase-requirement',
+      component: () => import('../components/etsy/EtsyPurchaseRequirement.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/production-requirement',
+      name: 'etsy-production-requirement',
+      component: () => import('../components/etsy/EtsyProductionRequirement.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/shipping-delivery',
+      name: 'etsy-shipping-delivery',
+      component: () => import('../components/etsy/EtsyShippingDelivery.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/qr-code-label',
+      name: 'etsy-qr-code-label',
+      component: () => import('../components/etsy/EtsyQrCodeLabel.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/yuntu-export',
+      name: 'etsy-yuntu-export',
+      component: () => import('../components/etsy/EtsyYunTuExport.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/yuntu-deduction',
+      name: 'etsy-yuntu-deduction',
+      component: () => import('../components/etsy/EtsyYunTuDeduction.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/etsy/store-information',
+      name: 'etsy-store-information',
+      component: () => import('../components/etsy/EtsyStoreInformation.vue'),
+      meta: { requiresAuth: true }
+    },
     {
       path: '/about',
       name: 'about',

@@ -30,12 +30,19 @@ export const useAuthStore = defineStore('auth', () => {
   // 获取存储的认证信息
   const initAuth = () => {
     const { accessToken, userInfo } = authUtils.getAuthData()
+    console.log('🔍 初始化认证状态:', { 
+      hasAccessToken: !!accessToken, 
+      hasUserInfo: !!userInfo,
+      tokenExpired: accessToken ? authUtils.isTokenExpired(accessToken) : true
+    })
     
     if (accessToken && userInfo && !authUtils.isTokenExpired(accessToken)) {
       token.value = accessToken
       user.value = userInfo
       isAuthenticated.value = true
+      console.log('✅ 认证状态初始化成功')
     } else {
+      console.log('❌ 认证状态初始化失败，清除认证信息')
       clearAuth()
     }
   }

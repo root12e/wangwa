@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     user_views, department_views, store_management, admin_invitation_views,
-    product_management, inventory_management, message_system
+    product_management, inventory_management, message_system, etsy_views
 )
 from .views.User import (
     UserLoginView, UserRegistrationView, UserLogoutView,
@@ -47,6 +47,22 @@ router.register(r'messages', message_system.MessageViewSet)
 router.register(r'inventory-warnings', message_system.InventoryWarningViewSet)
 router.register(r'warning-notifications', message_system.WarningNotificationViewSet)
 router.register(r'file-upload', message_system.FileUploadViewSet, basename='file-upload')
+
+# Etsy模块路由
+router.register(r'etsy/product-registration', etsy_views.EtsyProductRegistrationViewSet)
+router.register(r'etsy/order-import-summary', etsy_views.EtsyOrderImportSummaryViewSet)
+router.register(r'etsy/order-statistics', etsy_views.EtsyOrderStatisticsViewSet)
+router.register(r'etsy/design-requirement', etsy_views.EtsyDesignRequirementViewSet)
+router.register(r'etsy/purchase-requirement', etsy_views.EtsyPurchaseRequirementViewSet)
+router.register(r'etsy/production-requirement', etsy_views.EtsyProductionRequirementViewSet)
+router.register(r'etsy/shipping-delivery', etsy_views.EtsyShippingDeliveryViewSet)
+router.register(r'etsy/qr-code-label', etsy_views.EtsyQRCodeLabelViewSet)
+router.register(r'etsy/yuntu-export', etsy_views.EtsyYunTuExportViewSet)
+router.register(r'etsy/yuntu-deduction', etsy_views.EtsyYunTuDeductionViewSet)
+router.register(r'etsy/store-information', etsy_views.EtsyStoreInformationViewSet)
+
+# Etsy同步管理路由
+router.register(r'etsy/sync-management', etsy_views.EtsySyncManagementViewSet, basename='etsy-sync-management')
 
 # 管理员邀请路由
 router.register(r'admin-invitations', admin_invitation_views.AdminInvitationViewSet)

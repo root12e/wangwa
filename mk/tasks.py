@@ -358,3 +358,147 @@ def send_inventory_warning_emails_task():
     except Exception as e:
         logger.error(f"库存预警邮件发送任务失败: {str(e)}")
         return 0
+
+# -*- coding: utf-8 -*-
+from celery import shared_task
+from django.utils import timezone
+import logging
+
+from .services.etsy_sync_service import etsy_sync
+from .services.redis_cache_service import redis_cache
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task(bind=True)
+def sync_etsy_data_task(self, model_name=None):
+    """Etsy数据同步任务"""
+    try:
+        if model_name:
+            # 同步指定模型
+            success = etsy_sync.sync_model_data(model_name)
+            if success:
+                logger.info(f"模型 {model_name} 数据同步成功")
+                return f"模型 {model_name} 数据同步成功"
+            else:
+                logger.error(f"模型 {model_name} 数据同步失败")
+                return f"模型 {model_name} 数据同步失败"
+        else:
+            # 同步所有模型
+            results = etsy_sync.sync_all_models()
+            success_count = sum(1 for success in results.values() if success)
+            total_count = len(results)
+            
+            logger.info(f"Etsy数据同步完成，成功: {success_count}/{total_count}")
+            return f"Etsy数据同步完成，成功: {success_count}/{total_count}"
+            
+    except Exception as e:
+        logger.error(f"Etsy数据同步任务失败: {e}")
+        raise self.retry(countdown=60, max_retries=3)
+
+
+@shared_task(bind=True)
+def sync_etsy_product_registration_task(self):
+    """同步Etsy产品登记数据"""
+    return sync_etsy_data_task.delay('product_registration')
+
+
+@shared_task(bind=True)
+def sync_etsy_order_import_summary_task(self):
+    """同步Etsy订单导入汇总数据"""
+    return sync_etsy_data_task.delay('order_import_summary')
+
+
+@shared_task(bind=True)
+def sync_etsy_order_statistics_task(self):
+    """同步Etsy订单统计数据"""
+    return sync_etsy_data_task.delay('order_statistics')
+
+
+@shared_task(bind=True)
+def sync_etsy_design_requirement_task(self):
+    """同步Etsy设计需求数据"""
+    return sync_etsy_data_task.delay('design_requirement')
+
+
+@shared_task(bind=True)
+def sync_etsy_purchase_requirement_task(self):
+    """同步Etsy采购需求数据"""
+    return sync_etsy_data_task.delay('purchase_requirement')
+
+
+@shared_task(bind=True)
+def sync_etsy_production_requirement_task(self):
+    """同步Etsy生产需求数据"""
+    return sync_etsy_data_task.delay('production_requirement')
+
+
+@shared_task(bind=True)
+def sync_etsy_shipping_delivery_task(self):
+    """同步Etsy配货发货数据"""
+    return sync_etsy_data_task.delay('shipping_delivery')
+
+
+@shared_task(bind=True)
+def sync_etsy_qr_code_label_task(self):
+    """同步Etsy二维码标签数据"""
+    return sync_etsy_data_task.delay('qr_code_label')
+
+
+@shared_task(bind=True)
+def sync_etsy_yuntu_export_task(self):
+    """同步Etsy云途导出数据"""
+    return sync_etsy_data_task.delay('yuntu_export')
+
+
+@shared_task(bind=True)
+def sync_etsy_yuntu_deduction_task(self):
+    """同步Etsy云途扣费数据"""
+    return sync_etsy_data_task.delay('yuntu_deduction')
+
+
+@shared_task(bind=True)
+def sync_etsy_store_information_task(self):
+    """同步Etsy店铺信息数据"""
+    return sync_etsy_data_task.delay('store_information')
+
+
+@shared_task(bind=True)
+def cleanup_expired_cache_task(self):
+    """清理过期缓存任务"""
+    try:
+        # 这里可以添加清理过期缓存的逻辑
+        # 目前Redis会自动清理过期键，所以这个任务主要用于监控
+        cache_info = redis_cache.get_cache_info()
+        logger.info(f"缓存清理任务完成，当前缓存信息: {cache_info}")
+        return "缓存清理任务完成"
+        
+    except Exception as e:
+        logger.error(f"缓存清理任务失败: {e}")
+        raise self.retry(countdown=300, max_retries=2)
+
+
+@shared_task(bind=True)
+def health_check_task(self):
+    """健康检查任务"""
+    try:
+        # 检查Redis连接
+        redis_health = redis_cache.health_check()
+        
+        # 检查同步状态
+        sync_status = etsy_sync.get_sync_status()
+        
+        health_info = {
+            'redis_health': redis_health,
+            'sync_status': sync_status,
+            'timestamp': timezone.now().isoformat()
+        }
+        
+        if not redis_health:
+            logger.warning("Redis连接异常")
+        
+        logger.info(f"健康检查完成: {health_info}")
+        return health_info
+        
+    except Exception as e:
+        logger.error(f"健康检查任务失败: {e}")

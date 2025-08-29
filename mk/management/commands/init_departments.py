@@ -34,6 +34,10 @@ class Command(BaseCommand):
                     {
                         'name': '人事部',
                         'description': '负责人力资源管理'
+                    },
+                    {
+                        'name': 'Etsy部',
+                        'description': '负责Etsy平台相关业务管理'
                     }
                 ]
                 

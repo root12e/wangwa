@@ -67,12 +67,15 @@
   --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
   --box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   --box-shadow-dark: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.12);
+  --shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --shadow-heavy: 0 4px 20px rgba(0, 0, 0, 0.15);
 
   /* 圆角 */
   --border-radius-base: 4px;
   --border-radius-small: 2px;
   --border-radius-large: 8px;
   --border-radius-round: 20px;
+  --border-radius: 4px;
 
   /* 过渡动画 */
   --transition-base: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
